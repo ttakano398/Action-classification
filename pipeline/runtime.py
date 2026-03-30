@@ -9,6 +9,7 @@ from typing import Any
 import cv2
 
 from action import BlockGCNInferencer, build_model_input_clip
+from action import ActionSmoother
 from pose import Coco17Mapper, RTMOEstimator
 from schemas import ActionResult, PoseObservation
 from settings import resolve_runtime_paths
@@ -50,11 +51,16 @@ class RuntimePipeline:
             keypoint_dist_weight=float(self.config["tracking"]["keypoint_dist_weight"]),
         )
         self.action_predictor = BlockGCNInferencer(self.action_cfg)
+        self.action_smoother = ActionSmoother(
+            score_thr=float(self.action_cfg.get("score_thr", 0.6)),
+            confirm_count=int(self.action_cfg.get("smooth_confirm_count", 3)),
+        )
         self.visualizer = DebugVisualizer(self.output_cfg)
         self.logger = _build_stdout_logger(bool(self.logging_cfg.get("enable_stdout", True)))
         self.log_interval = max(int(self.logging_cfg.get("interval", 15)), 1)
         self.log_empty_frames = bool(self.logging_cfg.get("log_empty_frames", False))
         self.json_writer = None
+        self.video_writer = None
         if self.output_cfg.get("save_json", False):
             self.json_writer = JsonlWriter(self.output_cfg["json_path"])
 
@@ -64,6 +70,7 @@ class RuntimePipeline:
             width=int(self.input_cfg.get("width", 0) or 0),
             height=int(self.input_cfg.get("height", 0) or 0),
         )
+        source_fps = source_reader.fps()
         last_time = time.perf_counter()
         self.logger.info(
             "start source=%s width=%s height=%s device=%s pose_model=%s",
@@ -102,6 +109,11 @@ class RuntimePipeline:
                         "track_ids": track_ids,
                     },
                 )
+                if self.output_cfg.get("save_video", False):
+                    if self.video_writer is None:
+                        self.video_writer = self._create_video_writer(canvas, source_fps)
+                    if self.video_writer is not None:
+                        self.video_writer.write(canvas)
 
                 if self.output_cfg.get("draw_overlay", True):
                     cv2.imshow(self.output_cfg.get("window_name", "RTMO Debug"), canvas)
@@ -112,6 +124,8 @@ class RuntimePipeline:
             source_reader.release()
             if self.json_writer:
                 self.json_writer.close()
+            if self.video_writer:
+                self.video_writer.release()
             cv2.destroyAllWindows()
 
     def _process_frame(
@@ -126,8 +140,11 @@ class RuntimePipeline:
         tracked_results: list[tuple[PoseObservation, ActionResult]] = []
         for observation in tracked:
             clip = self.track_manager.get_clip(int(observation.track_id))
-            action = self._predict_action(clip)
+            raw_action = self._predict_action(clip)
+            action = self.action_smoother.update(int(observation.track_id), raw_action)
             tracked_results.append((observation, action))
+
+        self.action_smoother.prune(self.track_manager.tracks.keys())
 
         if self.json_writer:
             self.json_writer.write(timestamp_sec=timestamp_sec, tracked=tracked_results)
@@ -169,3 +186,23 @@ class RuntimePipeline:
             track_ids,
             states,
         )
+
+    def _create_video_writer(self, canvas, fps: float):
+        video_path = self.output_cfg.get("video_path")
+        if not video_path:
+            return None
+
+        path = Path(video_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        height, width = canvas.shape[:2]
+        writer = cv2.VideoWriter(
+            str(path),
+            cv2.VideoWriter_fourcc(*"mp4v"),
+            fps if fps > 0 else float(self.input_cfg.get("fps", 30)),
+            (width, height),
+        )
+        if not writer.isOpened():
+            self.logger.info("failed to open video writer: %s", path)
+            return None
+        self.logger.info("save_video enabled: %s", path)
+        return writer

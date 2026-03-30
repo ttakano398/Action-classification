@@ -228,8 +228,50 @@ python run_debug.py \
   --config config/default.yaml \
   --input /path/to/video.mp4 \
   --device cuda:0 \
+  --save-video \
   --save-json
 ```
+
+## Tuning tips for skeleton detection
+
+When the skeleton overlay is unstable, missing, or overly noisy, start by
+adjusting the pose-related parameters in `config/default.yaml`.
+
+If the skeleton is hard to detect or disappears too easily:
+
+- lower `pose.conf_thr`
+  - example: `0.5 -> 0.4`
+- lower `pose.min_visible_joints`
+  - example: `6 -> 5`
+- lower `pose.min_detection_score`
+  - example: `0.4 -> 0.3`
+- lower `pose.min_bbox_height` if the person appears smaller in frame
+  - example: `80 -> 60`
+
+If false positives are frequent or duplicate boxes appear on the same person:
+
+- raise `pose.conf_thr`
+  - example: `0.5 -> 0.6`
+- raise `pose.min_visible_joints`
+  - example: `6 -> 8`
+- raise `pose.min_detection_score`
+  - example: `0.4 -> 0.5`
+- raise `pose.min_bbox_height` to reject tiny detections
+  - example: `80 -> 120`
+- lower `pose.duplicate_iou_thr` to merge overlapping duplicate detections more aggressively
+  - example: `0.6 -> 0.5`
+
+Tracking-related cleanup can also help if IDs flicker or stale tracks remain:
+
+- lower `tracking.max_missing_frames`
+  - example: `8 -> 3`
+
+Practical guidance:
+
+- if nothing is detected, loosen thresholds first
+- if too many noisy boxes appear, tighten pose thresholds first
+- if the same person gets multiple overlapping boxes, tune `duplicate_iou_thr`
+- if IDs remain after a person leaves, tune `max_missing_frames`
 
 ## Current output behavior
 
@@ -245,7 +287,9 @@ The runtime overlays:
 
 Without a BlockGCN checkpoint wired in, each tracked person will remain in a
 non-final action state such as `warmup` or `no_action_model`. This is expected
-for the initial scope.
+for the initial scope. The runtime now includes state management for future
+classifier outputs, so once a real action backend is connected it can expose
+`stable`, `transition`, and `uncertain` states without further pipeline changes.
 
 ## Next implementation step
 

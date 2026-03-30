@@ -27,8 +27,12 @@ tracking:
   keypoint_dist_weight: 0.2
 
 action:
-  model: blockgcn
+  model: ctrgcn
   backend: pending
+  pretrained_label_space: ntu120
+  debug_label_format: ntu_label
+  secondary_model: hdgcn
+  future_model: blockgcn
   checkpoint: null
   labels:
     - standing
@@ -63,7 +67,7 @@ output:
   json_path: output/predictions.jsonl
   save_video: false
   video_path: output/debug_overlay.mp4
-  window_name: RTMO BlockGCN Debug
+  window_name: RTMO CTR-GCN Debug
 
 logging:
   enable_stdout: false
