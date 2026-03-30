@@ -2,15 +2,46 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PYTHON_BIN="${PYTHON_BIN:-python3}"
+PYTHON_BIN="${PYTHON_BIN:-}"
 VENV_DIR="${VENV_DIR:-$ROOT_DIR/.venv}"
 TORCH_INDEX_URL="${TORCH_INDEX_URL:-https://download.pytorch.org/whl/cu121}"
+TORCH_VERSION="${TORCH_VERSION:-2.5.1}"
+TORCHVISION_VERSION="${TORCHVISION_VERSION:-0.20.1}"
 DOWNLOAD_RTMO="${DOWNLOAD_RTMO:-0}"
 INSTALL_APT_DEPS="${INSTALL_APT_DEPS:-1}"
+
+if [[ -z "${PYTHON_BIN}" ]]; then
+  for candidate in python3.10 python3.11 python3; do
+    if command -v "${candidate}" >/dev/null 2>&1; then
+      PYTHON_BIN="${candidate}"
+      break
+    fi
+  done
+fi
 
 if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
   echo "Python binary not found: ${PYTHON_BIN}" >&2
   exit 1
+fi
+
+PYTHON_VERSION="$("${PYTHON_BIN}" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+case "${PYTHON_VERSION}" in
+  3.10|3.11)
+    ;;
+  *)
+    echo "Unsupported Python version: ${PYTHON_VERSION}" >&2
+    echo "Use PYTHON_BIN=python3.10 (preferred) or PYTHON_BIN=python3.11." >&2
+    exit 1
+    ;;
+esac
+
+if [[ -x "${VENV_DIR}/bin/python" ]]; then
+  EXISTING_VENV_VERSION="$("${VENV_DIR}/bin/python" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+  if [[ "${EXISTING_VENV_VERSION}" != "${PYTHON_VERSION}" ]]; then
+    echo "Existing virtualenv uses Python ${EXISTING_VENV_VERSION}, but ${PYTHON_BIN} is Python ${PYTHON_VERSION}." >&2
+    echo "Remove ${VENV_DIR} and rerun the setup, or choose a matching VENV_DIR." >&2
+    exit 1
+  fi
 fi
 
 if [[ "${INSTALL_APT_DEPS}" == "1" ]] && command -v apt-get >/dev/null 2>&1; then
@@ -34,7 +65,10 @@ fi
 source "${VENV_DIR}/bin/activate"
 
 python -m pip install --upgrade pip setuptools wheel
-python -m pip install --index-url "${TORCH_INDEX_URL}" torch torchvision torchaudio
+python -m pip install \
+  --index-url "${TORCH_INDEX_URL}" \
+  "torch==${TORCH_VERSION}" \
+  "torchvision==${TORCHVISION_VERSION}"
 python -m pip install openmim
 mim install "mmengine>=0.10.0" "mmcv>=2.1.0"
 python -m pip install \
@@ -57,6 +91,9 @@ fi
 cat <<EOF
 
 Setup complete.
+
+Selected Python:
+  ${PYTHON_BIN} (${PYTHON_VERSION})
 
 Activate the environment with:
   source "${VENV_DIR}/bin/activate"

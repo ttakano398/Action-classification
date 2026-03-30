@@ -38,7 +38,9 @@ spec.md          Project specification
 - Ubuntu 22.04 LTS preferred
 - NVIDIA GPU
 - CUDA-capable PyTorch
-- Python 3.10 or newer
+- Python 3.10 preferred
+- Python 3.11 acceptable
+- Python 3.13 is not supported by the current setup script
 
 ## Setup
 
@@ -52,10 +54,16 @@ Optional environment variables:
 
 ```bash
 TORCH_INDEX_URL=https://download.pytorch.org/whl/cu121
-PYTHON_BIN=python3
+PYTHON_BIN=python3.10
 VENV_DIR=.venv
 DOWNLOAD_RTMO=1
+TORCH_VERSION=2.5.1
+TORCHVISION_VERSION=0.20.1
 ```
+
+The setup intentionally installs `torch` and `torchvision` only. This project
+does not use audio, so `torchaudio` is omitted to avoid unnecessary Python
+wheel compatibility issues.
 
 If `DOWNLOAD_RTMO=1` is set, the script attempts to download the RTMO model
 assets with:
