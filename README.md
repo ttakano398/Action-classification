@@ -21,16 +21,17 @@ flow with `warmup` / `no_action_model` states.
 ## Repository layout
 
 ```text
-action/          Action preprocessing and predictor interface
-config/          YAML configuration files
-output/          JSON writer and visualization utilities
-pipeline/        End-to-end runtime orchestration
-pose/            RTMO wrapper and keypoint mapping
-scripts/         Environment setup scripts
-tracking/        Hungarian assigner and track manager
-video_input/     Video / webcam source wrapper
-run_debug.py     Main debug runtime entrypoint
-spec.md          Project specification
+action/            Action preprocessing and predictor interface
+config/            YAML configuration files
+pipeline/          End-to-end runtime orchestration
+pose/              RTMO wrapper and keypoint mapping
+scripts/           Environment setup scripts
+tracking/          Hungarian assigner and track manager
+util/              Visualization and JSON writer utilities
+video_input/       Video / webcam source wrapper
+output/            Generated overlays and JSONL outputs
+run_debug.py       Main debug runtime entrypoint
+spec.md            Project specification
 ```
 
 ## Target environment
@@ -43,6 +44,21 @@ spec.md          Project specification
 - Python 3.13 is not supported by the current setup script
 
 ## Setup
+
+### Prerequisites
+
+Install these system packages on the Ubuntu CUDA machine before running the
+project setup:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y git curl ffmpeg libgl1 libglib2.0-0 python3-venv
+```
+
+If you do not want `setup.sh` to invoke `sudo`, keep the default behavior and
+install the packages above yourself.
+
+### Python setup
 
 Run the setup script on the Ubuntu CUDA machine:
 
@@ -57,13 +73,22 @@ TORCH_INDEX_URL=https://download.pytorch.org/whl/cu121
 PYTHON_BIN=python3.10
 VENV_DIR=.venv
 DOWNLOAD_RTMO=1
-TORCH_VERSION=2.5.1
-TORCHVISION_VERSION=0.20.1
+TORCH_VERSION=2.4.0
+TORCHVISION_VERSION=0.19.0
+MMENGINE_VERSION=0.10.7
+MMCV_VERSION=2.2.0
+MMCV_WHEEL_URL=https://download.openmmlab.com/mmcv/dist/cu121/torch2.4.0/index.html
+INSTALL_APT_DEPS=1
 ```
 
 The setup intentionally installs `torch` and `torchvision` only. This project
 does not use audio, so `torchaudio` is omitted to avoid unnecessary Python
 wheel compatibility issues.
+
+The default stack is pinned to `torch==2.4.0`, `torchvision==0.19.0`,
+`mmengine==0.10.7`, and `mmcv==2.2.0` because OpenMMLab provides a prebuilt
+`mmcv` wheel for CUDA 12.1 + Torch 2.4.0. This avoids falling back to a source
+build of `mmcv`, which is the main failure mode on fresh Ubuntu machines.
 
 If `DOWNLOAD_RTMO=1` is set, the script attempts to download the RTMO model
 assets with:

@@ -55,7 +55,7 @@ output:
   show_action_score: true
   show_fps: true
   save_json: false
-  json_path: artifacts/predictions.jsonl
+  json_path: output/predictions.jsonl
   save_video: false
-  video_path: artifacts/debug_overlay.mp4
+  video_path: output/debug_overlay.mp4
   window_name: RTMO BlockGCN Debug

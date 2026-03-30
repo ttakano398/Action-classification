@@ -5,10 +5,13 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON_BIN="${PYTHON_BIN:-}"
 VENV_DIR="${VENV_DIR:-$ROOT_DIR/.venv}"
 TORCH_INDEX_URL="${TORCH_INDEX_URL:-https://download.pytorch.org/whl/cu121}"
-TORCH_VERSION="${TORCH_VERSION:-2.5.1}"
-TORCHVISION_VERSION="${TORCHVISION_VERSION:-0.20.1}"
+TORCH_VERSION="${TORCH_VERSION:-2.4.0}"
+TORCHVISION_VERSION="${TORCHVISION_VERSION:-0.19.0}"
+MMENGINE_VERSION="${MMENGINE_VERSION:-0.10.7}"
+MMCV_VERSION="${MMCV_VERSION:-2.2.0}"
+MMCV_WHEEL_URL="${MMCV_WHEEL_URL:-https://download.openmmlab.com/mmcv/dist/cu121/torch2.4.0/index.html}"
 DOWNLOAD_RTMO="${DOWNLOAD_RTMO:-0}"
-INSTALL_APT_DEPS="${INSTALL_APT_DEPS:-1}"
+INSTALL_APT_DEPS="${INSTALL_APT_DEPS:-0}"
 
 if [[ -z "${PYTHON_BIN}" ]]; then
   for candidate in python3.10 python3.11 python3; do
@@ -70,7 +73,10 @@ python -m pip install \
   "torch==${TORCH_VERSION}" \
   "torchvision==${TORCHVISION_VERSION}"
 python -m pip install openmim
-mim install "mmengine>=0.10.0" "mmcv>=2.1.0"
+python -m pip install "mmengine==${MMENGINE_VERSION}"
+python -m pip install \
+  "mmcv==${MMCV_VERSION}" \
+  -f "${MMCV_WHEEL_URL}"
 python -m pip install \
   "mmpose>=1.3.0,<1.4.0" \
   "mmaction2>=1.2.0,<1.3.0" \
@@ -79,7 +85,7 @@ python -m pip install \
   opencv-python \
   pyyaml
 
-mkdir -p "${ROOT_DIR}/artifacts"
+mkdir -p "${ROOT_DIR}/output"
 mkdir -p "${ROOT_DIR}/checkpoints"
 
 if [[ "${DOWNLOAD_RTMO}" == "1" ]]; then
@@ -94,6 +100,12 @@ Setup complete.
 
 Selected Python:
   ${PYTHON_BIN} (${PYTHON_VERSION})
+
+Pinned runtime stack:
+  torch==${TORCH_VERSION}
+  torchvision==${TORCHVISION_VERSION}
+  mmengine==${MMENGINE_VERSION}
+  mmcv==${MMCV_VERSION}
 
 Activate the environment with:
   source "${VENV_DIR}/bin/activate"

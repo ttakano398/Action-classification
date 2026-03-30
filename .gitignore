@@ -23,7 +23,7 @@ dist/
 .vscode/
 
 # Runtime artifacts
-artifacts/
+output/
 runs/
 captures/
 logs/

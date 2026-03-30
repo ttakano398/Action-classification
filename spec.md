@@ -524,7 +524,7 @@ PoC では `zone_id` や `in/out event` は出力しない。
 * フレーム同期
 * バッファ連携
 
-### `output/`
+### `util/`
 
 * overlay 描画
 * JSON 出力
@@ -870,7 +870,7 @@ PoC の次段階では `Joint only` から以下へ拡張可能とする。
 * `tracking/` の Hungarian ベース ID 割当
 * `action/` の BlockGCN 入力整形と推論ラッパ
 * `pipeline/` の end-to-end 推論導線
-* `output/` の JSON / overlay 出力
+* `output/` への JSON / overlay 出力
 * デバッグ用可視化
 * 実行エントリポイント
 
@@ -1056,8 +1056,8 @@ PoC の次段階では `Joint only` から以下へ拡張可能とする。
 成果物:
 
 * `pipeline/runtime.py`
-* `output/json_writer.py`
-* `output/visualizer.py`
+* `util/json_writer.py`
+* `util/visualizer.py`
 * メイン実行スクリプト
 
 完了条件:
