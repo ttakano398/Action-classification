@@ -58,13 +58,24 @@ class DebugVisualizer:
         if self.output_cfg.get("show_action_score", True):
             tokens.append(f"score={action.score:.2f}")
         tokens.append(f"state={action.state}")
-        cv2.putText(
-            frame,
-            " | ".join(tokens),
-            (x1, max(20, y1 - 10)),
+        label = " | ".join(tokens)
+        origin = (x1, max(20, y1 - 10))
+        (text_width, text_height), baseline = cv2.getTextSize(
+            label,
             cv2.FONT_HERSHEY_SIMPLEX,
             0.5,
-            (255, 255, 255),
+            2,
+        )
+        top_left = (origin[0] - 4, origin[1] - text_height - 6)
+        bottom_right = (origin[0] + text_width + 4, origin[1] + baseline + 2)
+        cv2.rectangle(frame, top_left, bottom_right, (0, 0, 0), -1)
+        cv2.putText(
+            frame,
+            label,
+            origin,
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (0, 0, 255),
             2,
             cv2.LINE_AA,
         )
