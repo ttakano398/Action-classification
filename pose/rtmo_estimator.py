@@ -18,6 +18,32 @@ def _resolve_model_asset(model_dir: Path, model_name: str, suffix: str) -> str:
     return str(matches[0])
 
 
+def _bbox_height(bbox: np.ndarray) -> float:
+    return float(max(bbox[3] - bbox[1], 0.0))
+
+
+def _bbox_iou(a: np.ndarray, b: np.ndarray) -> float:
+    ax1, ay1, ax2, ay2 = a
+    bx1, by1, bx2, by2 = b
+    inter_x1 = max(float(ax1), float(bx1))
+    inter_y1 = max(float(ay1), float(by1))
+    inter_x2 = min(float(ax2), float(bx2))
+    inter_y2 = min(float(ay2), float(by2))
+
+    inter_w = max(inter_x2 - inter_x1, 0.0)
+    inter_h = max(inter_y2 - inter_y1, 0.0)
+    inter_area = inter_w * inter_h
+    if inter_area <= 0:
+        return 0.0
+
+    area_a = max(float(ax2 - ax1), 0.0) * max(float(ay2 - ay1), 0.0)
+    area_b = max(float(bx2 - bx1), 0.0) * max(float(by2 - by1), 0.0)
+    union = area_a + area_b - inter_area
+    if union <= 0:
+        return 0.0
+    return inter_area / union
+
+
 class RTMOEstimator:
     def __init__(self, pose_cfg: dict[str, Any], device_override: str | None = None):
         try:
@@ -34,7 +60,11 @@ class RTMOEstimator:
             ) from exc
 
         self._inference_bottomup = inference_bottomup
-        self.conf_thr = float(pose_cfg.get("conf_thr", 0.3))
+        self.conf_thr = float(pose_cfg.get("conf_thr", 0.5))
+        self.min_visible_joints = int(pose_cfg.get("min_visible_joints", 6))
+        self.min_detection_score = float(pose_cfg.get("min_detection_score", 0.4))
+        self.min_bbox_height = float(pose_cfg.get("min_bbox_height", 80.0))
+        self.duplicate_iou_thr = float(pose_cfg.get("duplicate_iou_thr", 0.6))
         model_dir = Path(pose_cfg.get("model_dir", "checkpoints"))
         model_name = pose_cfg["model_name"]
         config_file = pose_cfg.get("config_file") or _resolve_model_asset(model_dir, model_name, ".py")
@@ -74,7 +104,8 @@ class RTMOEstimator:
                 person_keypoints = np.concatenate([person_keypoints, conf], axis=-1)
 
             visible = person_keypoints[:, 2] >= self.conf_thr
-            if not np.any(visible):
+            visible_count = int(np.count_nonzero(visible))
+            if visible_count < self.min_visible_joints:
                 continue
 
             if bboxes is not None and len(bboxes) > idx:
@@ -90,6 +121,11 @@ class RTMOEstimator:
             else:
                 det_score = float(np.mean(person_keypoints[visible, 2]))
 
+            if det_score < self.min_detection_score:
+                continue
+            if _bbox_height(bbox) < self.min_bbox_height:
+                continue
+
             outputs.append(
                 PoseObservation(
                     bbox=bbox,
@@ -97,4 +133,12 @@ class RTMOEstimator:
                     detection_score=det_score,
                 )
             )
-        return outputs
+
+        outputs.sort(key=lambda item: item.detection_score, reverse=True)
+        deduped: list[PoseObservation] = []
+        for observation in outputs:
+            if any(_bbox_iou(observation.bbox, kept.bbox) >= self.duplicate_iou_thr for kept in deduped):
+                continue
+            deduped.append(observation)
+
+        return deduped
