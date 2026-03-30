@@ -30,6 +30,7 @@ logs/
 
 # Downloaded assets / models
 checkpoints/
+third_party/
 datasets/
 *.pth
 *.pt

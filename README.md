@@ -250,6 +250,44 @@ The initial wrapper assumes the official repo layout and imports:
 - `model.ctrgcn`
 - `graph.ntu_rgb_d.Graph`
 
+## Place CTR-GCN assets
+
+Place the official `CTR-GCN` repository and pretrained checkpoint before
+running action inference.
+
+1. Put the official repository here:
+
+```bash
+mkdir -p third_party
+git clone https://github.com/Uason-Chen/CTR-GCN.git third_party/CTR-GCN
+```
+
+2. Put the pretrained checkpoint here:
+
+```bash
+mkdir -p checkpoints/ctrgcn/CTRGCN_NTU120_CSub_joint_84.9
+cp /path/to/runs-58-57072.pt \
+  checkpoints/ctrgcn/CTRGCN_NTU120_CSub_joint_84.9/runs-58-57072.pt
+```
+
+3. Verify that both paths exist:
+
+```bash
+ls -ld third_party/CTR-GCN
+ls -l checkpoints/ctrgcn/CTRGCN_NTU120_CSub_joint_84.9/runs-58-57072.pt
+```
+
+4. If you use a different repo path or checkpoint filename, update these keys
+in `config/default.yaml`:
+
+- `action.repo_dir`
+- `action.checkpoint`
+
+If you already downloaded the official repo elsewhere, moving or copying it to
+`third_party/CTR-GCN` is sufficient. The current wrapper does not require the
+repo to be installed as a package; it imports directly from the configured
+directory.
+
 ## Run debug overlay
 
 Activate the virtual environment first:
