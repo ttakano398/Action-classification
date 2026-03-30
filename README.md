@@ -79,6 +79,7 @@ MMENGINE_VERSION=0.10.7
 MMCV_VERSION=2.2.0
 MMCV_WHEEL_URL=https://download.openmmlab.com/mmcv/dist/cu121/torch2.4.0/index.html
 INSTALL_APT_DEPS=1
+INSTALL_MMACTION2=1
 ```
 
 The setup intentionally installs `torch` and `torchvision` only. This project
@@ -90,6 +91,18 @@ The default stack is pinned to `torch==2.4.0`, `torchvision==0.19.0`,
 `mmcv` wheel for CUDA 12.1 + Torch 2.4.0. This avoids falling back to a source
 build of `mmcv`, which is the main failure mode on fresh Ubuntu machines.
 
+For the current PoC, `mmpose` is installed with `--no-deps` after the required
+runtime libraries are installed manually. This intentionally skips `chumpy`,
+which is listed in MMPose runtime requirements but is not needed by the current
+RTMO debug pipeline and is a common source of installation failures on fresh
+Ubuntu environments. This is an implementation choice for this repository,
+based on the fact that the current code path only uses `mmpose.apis` for 2D
+bottom-up inference.
+
+`mmaction2` is optional for now because the current repository still uses a
+placeholder BlockGCN backend. If you want to prepare the future action-model
+environment in advance, set `INSTALL_MMACTION2=1`.
+
 If `DOWNLOAD_RTMO=1` is set, the script attempts to download the RTMO model
 assets with:
 
@@ -99,6 +112,57 @@ mim download mmpose --config rtmo-s_8xb32-600e_body7-640x640 --dest checkpoints
 
 If model download is skipped, place the RTMO config and checkpoint under
 `checkpoints/`, or point the YAML config directly to custom paths.
+
+## Machine checklist
+
+To keep the setup as generic as possible, it helps to know these details on the
+target Ubuntu machine:
+
+- `uname -m`
+- `lsb_release -a`
+- `python3.10 --version`
+- `nvidia-smi`
+- available GPU VRAM
+- whether `sudo` is available
+- whether GUI display is available for `cv2.imshow`
+- webcam path such as `/dev/video0`
+
+Useful collection commands:
+
+```bash
+uname -m
+lsb_release -a
+python3.10 --version
+nvidia-smi
+df -h
+ls -l /dev/video0
+```
+
+For this PoC, the most important practical constraints are:
+
+- x86_64 Ubuntu
+- NVIDIA driver that matches CUDA 12.1 capable PyTorch
+- at least one accessible camera device if you want live validation
+- GUI session for overlay windows, or else save output instead of showing it
+
+VRAM requirements are modest for `RTMO-s` inference, but more VRAM gives more
+headroom once BlockGCN training or larger experiments begin.
+
+## Validated environment
+
+The setup is intended to stay generic, but it has been checked against this
+Ubuntu CUDA environment:
+
+- `x86_64`
+- Ubuntu 22.04.5 LTS
+- Python 3.10.12
+- NVIDIA RTX A4500 20GB
+- NVIDIA driver 580.126.09
+- `/dev/video0` available
+- GUI session available for `cv2.imshow`
+
+This is a validation reference, not a hard requirement. The documented setup
+should still work on similar Ubuntu 22.04 + NVIDIA GPU environments.
 
 ## Configuration
 
@@ -137,7 +201,7 @@ python run_debug.py --config config/default.yaml --input /path/to/video.mp4
 Run on webcam:
 
 ```bash
-python run_debug.py --config config/default.yaml --input 0
+python run_debug.py --config config/default.yaml --input /dev/video0
 ```
 
 Useful flags:

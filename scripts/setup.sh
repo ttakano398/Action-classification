@@ -12,6 +12,7 @@ MMCV_VERSION="${MMCV_VERSION:-2.2.0}"
 MMCV_WHEEL_URL="${MMCV_WHEEL_URL:-https://download.openmmlab.com/mmcv/dist/cu121/torch2.4.0/index.html}"
 DOWNLOAD_RTMO="${DOWNLOAD_RTMO:-0}"
 INSTALL_APT_DEPS="${INSTALL_APT_DEPS:-0}"
+INSTALL_MMACTION2="${INSTALL_MMACTION2:-0}"
 
 if [[ -z "${PYTHON_BIN}" ]]; then
   for candidate in python3.10 python3.11 python3; do
@@ -78,12 +79,21 @@ python -m pip install \
   "mmcv==${MMCV_VERSION}" \
   -f "${MMCV_WHEEL_URL}"
 python -m pip install \
-  "mmpose>=1.3.0,<1.4.0" \
-  "mmaction2>=1.2.0,<1.3.0" \
+  json_tricks \
+  matplotlib \
+  munkres \
   numpy \
-  scipy \
   opencv-python \
+  pillow \
   pyyaml
+python -m pip install \
+  scipy \
+  xtcocotools
+python -m pip install --no-deps "mmpose>=1.3.0,<1.4.0"
+
+if [[ "${INSTALL_MMACTION2}" == "1" ]]; then
+  python -m pip install "mmaction2>=1.2.0,<1.3.0"
+fi
 
 mkdir -p "${ROOT_DIR}/output"
 mkdir -p "${ROOT_DIR}/checkpoints"
@@ -106,6 +116,7 @@ Pinned runtime stack:
   torchvision==${TORCHVISION_VERSION}
   mmengine==${MMENGINE_VERSION}
   mmcv==${MMCV_VERSION}
+  mmpose>=1.3.0,<1.4.0 (installed without chumpy)
 
 Activate the environment with:
   source "${VENV_DIR}/bin/activate"
