@@ -23,8 +23,14 @@ class RTMOEstimator:
         try:
             from mmpose.apis import inference_bottomup, init_model
         except ImportError as exc:
+            missing_module = getattr(exc, "name", None)
+            if missing_module == "mmdet":
+                detail = "The RTMO stack needs MMDetection (`mmdet`) in addition to MMPose."
+            else:
+                detail = f"Import failed while loading the RTMO stack: {exc}."
             raise RuntimeError(
-                "MMPose is required to run RTMO. Run scripts/setup.sh on the target machine first."
+                "The RTMO runtime stack is incomplete. "
+                f"{detail} Run scripts/setup.sh on the target machine again."
             ) from exc
 
         self._inference_bottomup = inference_bottomup

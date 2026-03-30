@@ -5,11 +5,12 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON_BIN="${PYTHON_BIN:-}"
 VENV_DIR="${VENV_DIR:-$ROOT_DIR/.venv}"
 TORCH_INDEX_URL="${TORCH_INDEX_URL:-https://download.pytorch.org/whl/cu121}"
-TORCH_VERSION="${TORCH_VERSION:-2.4.0}"
-TORCHVISION_VERSION="${TORCHVISION_VERSION:-0.19.0}"
+TORCH_VERSION="${TORCH_VERSION:-2.1.0}"
+TORCHVISION_VERSION="${TORCHVISION_VERSION:-0.16.0}"
 MMENGINE_VERSION="${MMENGINE_VERSION:-0.10.7}"
-MMCV_VERSION="${MMCV_VERSION:-2.2.0}"
-MMCV_WHEEL_URL="${MMCV_WHEEL_URL:-https://download.openmmlab.com/mmcv/dist/cu121/torch2.4.0/index.html}"
+MMCV_VERSION="${MMCV_VERSION:-2.1.0}"
+MMCV_WHEEL_URL="${MMCV_WHEEL_URL:-https://download.openmmlab.com/mmcv/dist/cu121/torch2.1.0/index.html}"
+MMDET_VERSION="${MMDET_VERSION:-3.2.0}"
 NUMPY_VERSION="${NUMPY_VERSION:-1.26.4}"
 DOWNLOAD_RTMO="${DOWNLOAD_RTMO:-0}"
 INSTALL_APT_DEPS="${INSTALL_APT_DEPS:-0}"
@@ -93,6 +94,7 @@ python -m pip install \
 python -m pip install \
   --no-build-isolation \
   "xtcocotools>=1.12"
+python -m pip install "mmdet==${MMDET_VERSION}"
 python -m pip install --no-deps "mmpose>=1.3.0,<1.4.0"
 
 if [[ "${INSTALL_MMACTION2}" == "1" ]]; then
@@ -120,6 +122,7 @@ Pinned runtime stack:
   torchvision==${TORCHVISION_VERSION}
   mmengine==${MMENGINE_VERSION}
   mmcv==${MMCV_VERSION}
+  mmdet==${MMDET_VERSION}
   numpy==${NUMPY_VERSION}
   mmpose>=1.3.0,<1.4.0 (installed without chumpy)
 

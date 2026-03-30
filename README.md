@@ -73,11 +73,12 @@ TORCH_INDEX_URL=https://download.pytorch.org/whl/cu121
 PYTHON_BIN=python3.10
 VENV_DIR=.venv
 DOWNLOAD_RTMO=1
-TORCH_VERSION=2.4.0
-TORCHVISION_VERSION=0.19.0
+TORCH_VERSION=2.1.0
+TORCHVISION_VERSION=0.16.0
 MMENGINE_VERSION=0.10.7
-MMCV_VERSION=2.2.0
-MMCV_WHEEL_URL=https://download.openmmlab.com/mmcv/dist/cu121/torch2.4.0/index.html
+MMCV_VERSION=2.1.0
+MMCV_WHEEL_URL=https://download.openmmlab.com/mmcv/dist/cu121/torch2.1.0/index.html
+MMDET_VERSION=3.2.0
 NUMPY_VERSION=1.26.4
 INSTALL_APT_DEPS=1
 INSTALL_MMACTION2=1
@@ -87,11 +88,14 @@ The setup intentionally installs `torch` and `torchvision` only. This project
 does not use audio, so `torchaudio` is omitted to avoid unnecessary Python
 wheel compatibility issues.
 
-The default stack is pinned to `torch==2.4.0`, `torchvision==0.19.0`,
-`mmengine==0.10.7`, `mmcv==2.2.0`, and `numpy==1.26.4` because OpenMMLab
-provides a prebuilt `mmcv` wheel for CUDA 12.1 + Torch 2.4.0, while parts of
-the MMPose stack are still more stable on NumPy 1.x. This avoids both the
-source-build path of `mmcv` and ABI mismatches in `xtcocotools`.
+The default stack is pinned to `torch==2.1.0`, `torchvision==0.16.0`,
+`mmengine==0.10.7`, `mmcv==2.1.0`, `mmdet==3.2.0`, and `numpy==1.26.4`. This
+keeps the RTMO path on an older but more internally consistent OpenMMLab stack:
+PyTorch documents CUDA 12.1 wheels for Torch 2.1.0, OpenMMLab provides a
+prebuilt `mmcv==2.1.0` wheel for `cu121/torch2.1.0`, and MMPose 1.3.x expects
+an MMDetection 3.x dependency for RTMO. This avoids the source-build path of
+`mmcv`, the missing-`mmdet` import failure in `RTMOHead`, and NumPy ABI
+mismatches in `xtcocotools`.
 
 For the current PoC, `mmpose` is installed with `--no-deps` after the required
 runtime libraries are installed manually. This intentionally skips `chumpy`,
@@ -99,7 +103,8 @@ which is listed in MMPose runtime requirements but is not needed by the current
 RTMO debug pipeline and is a common source of installation failures on fresh
 Ubuntu environments. This is an implementation choice for this repository,
 based on the fact that the current code path only uses `mmpose.apis` for 2D
-bottom-up inference.
+bottom-up inference, while RTMO still requires `mmdet` and therefore installs
+that dependency explicitly.
 
 `xtcocotools` is installed with `--no-build-isolation` after pinning
 `numpy==1.26.4` so that its compiled extension matches the active NumPy ABI.
