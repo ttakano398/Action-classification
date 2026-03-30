@@ -1,0 +1,40 @@
+paper/
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+
+# IDE / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Runtime artifacts
+artifacts/
+runs/
+captures/
+logs/
+
+# Downloaded assets / models
+checkpoints/
+datasets/
+*.pth
+*.pt
+*.onnx
+*.engine
+
+# Local env files
+.env

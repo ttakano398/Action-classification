@@ -1,0 +1,61 @@
+input:
+  source: 0
+  width: 1280
+  height: 720
+  fps: 30
+
+pose:
+  model_name: rtmo-s_8xb32-600e_body7-640x640
+  config_file: null
+  checkpoint: null
+  model_dir: checkpoints
+  device: cuda:0
+  conf_thr: 0.3
+  keypoint_schema: coco17
+  source_order: coco17
+
+tracking:
+  enable_lightweight_tracking: true
+  match_method: hungarian
+  max_missing_frames: 8
+  iou_weight: 0.5
+  center_dist_weight: 0.3
+  keypoint_dist_weight: 0.2
+
+action:
+  model: blockgcn
+  backend: pending
+  checkpoint: null
+  labels:
+    - standing
+    - walking
+    - sitting
+    - crouching
+    - hand_raising
+  stream: joint
+  clip_len: 32
+  stride: 2
+  num_person: 1
+  num_joints: 17
+  in_channels: 3
+  positional_embedding: true
+  blockgc_groups: 8
+  static_topology: spd_shared
+  dynamic_topology: none
+  topo_insert_layers: 10
+  confidence_mode: input_channel
+  score_thr: 0.6
+  smooth_confirm_count: 3
+  use_unknown_class: false
+
+output:
+  draw_overlay: true
+  show_track_id: true
+  show_action_label: true
+  show_action_score: true
+  show_fps: true
+  save_json: false
+  json_path: artifacts/predictions.jsonl
+  save_video: false
+  video_path: artifacts/debug_overlay.mp4
+  window_name: RTMO BlockGCN Debug
