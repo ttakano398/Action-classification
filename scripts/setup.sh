@@ -103,6 +103,8 @@ fi
 
 mkdir -p "${ROOT_DIR}/output"
 mkdir -p "${ROOT_DIR}/checkpoints"
+mkdir -p "${ROOT_DIR}/checkpoints/ctrgcn"
+mkdir -p "${ROOT_DIR}/third_party"
 
 if [[ "${DOWNLOAD_RTMO}" == "1" ]]; then
   mim download mmpose \

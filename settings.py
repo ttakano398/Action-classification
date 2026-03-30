@@ -31,4 +31,10 @@ def resolve_runtime_paths(config: dict[str, Any], root_dir: str | Path) -> dict[
         pose_cfg["model_dir"] = str((root / pose_cfg["model_dir"]).resolve())
     resolved["pose"] = pose_cfg
 
+    action_cfg = dict(resolved.get("action", {}))
+    for key in ("checkpoint", "repo_dir", "label_map_file"):
+        if action_cfg.get(key):
+            action_cfg[key] = str((root / action_cfg[key]).resolve())
+    resolved["action"] = action_cfg
+
     return resolved

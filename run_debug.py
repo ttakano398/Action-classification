@@ -8,7 +8,7 @@ from settings import load_config
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="RTMO -> BlockGCN debug runtime")
+    parser = argparse.ArgumentParser(description="RTMO -> CTR-GCN debug runtime")
     parser.add_argument("--config", default="config/default.yaml", help="Path to YAML config")
     parser.add_argument("--input", default=None, help="Video path or webcam index")
     parser.add_argument("--device", default=None, help="Override device, for example cuda:0 or cpu")

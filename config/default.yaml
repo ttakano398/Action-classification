@@ -28,12 +28,16 @@ tracking:
 
 action:
   model: ctrgcn
-  backend: pending
+  backend: ctrgcn
   pretrained_label_space: ntu120
   debug_label_format: ntu_label
+  target_layout: ntu25
   secondary_model: hdgcn
   future_model: blockgcn
-  checkpoint: null
+  repo_dir: third_party/CTR-GCN
+  checkpoint: checkpoints/ctrgcn/CTRGCN_NTU120_CSub_joint_84.9/runs-58-57072.pt
+  device: cuda:0
+  num_class: 120
   labels:
     - standing
     - walking
@@ -43,15 +47,21 @@ action:
   stream: joint
   clip_len: 32
   stride: 2
-  num_person: 1
-  num_joints: 17
+  num_person: 2
+  num_joints: 25
   in_channels: 3
+  model_module: model.ctrgcn
+  model_class: Model
+  graph: graph.ntu_rgb_d.Graph
+  graph_args:
+    labeling_mode: spatial
   positional_embedding: true
   blockgc_groups: 8
   static_topology: spd_shared
   dynamic_topology: none
   topo_insert_layers: 10
   confidence_mode: input_channel
+  proxy_conf_scale: 0.5
   score_thr: 0.6
   smooth_confirm_count: 3
   use_unknown_class: false

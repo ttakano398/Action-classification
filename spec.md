@@ -13,7 +13,7 @@
 * 将来拡張の方向性を先に整理しておく
 * まだ未確定な論点を `保留事項` として切り出す
 
-本書は [preresearch.md](/Users/takanotaisei/Documents/NI/action-det/preresearch.md) をもとに、今回の議論内容を反映して具体化したものである。
+本書は [preresearch.md](preresearch.md) をもとに、今回の議論内容を反映して具体化したものである。
 
 ---
 
@@ -143,6 +143,18 @@ PoC の初期ラベルは以下の 5 クラスを基本とする。
 * `HD-GCN` も公式実装と pretrained weight を持つが、初期統合コストは `CTR-GCN` よりやや高い
 * `BlockGCN` は将来本命だが、公開 weight の扱いと RTMO 2D 入力への適用方針を別途詰める必要がある
 
+初期の推奨 checkpoint は以下とする。
+
+* 第一候補: `CTR-GCN / joint modality / NTU RGB+D 120 / cross-subject`
+* 第二候補: `CTR-GCN / joint modality / NTU RGB+D 60 / cross-subject`
+
+第一候補を推奨する理由は、ラベル空間がより広く、将来の独自ラベル fine-tune 用の初期重みとしても扱いやすいためである。
+
+初期配置パスは以下を標準とする。
+
+* official repo: `third_party/CTR-GCN`
+* checkpoint: `checkpoints/ctrgcn/ntu120_xsub_joint.pt`
+
 ### 5.2 映像入力
 
 初期入力条件は以下を想定する。
@@ -202,6 +214,7 @@ PoC では `single-person, single-clip` 入力を採用する。
 * `1 input = 1 track_id の連続骨格系列`
 * 同時人物が複数いても、推論入力は人物ごとに独立させる
 * 周辺人物文脈は PoC では入力しない
+* ただし公式 pretrained 互換のため、backend 入力テンソル上は `num_person = 2` とし、2人目スロットはゼロ埋めする
 
 ### 6.2 初期分類器の出力ラベル
 
@@ -219,6 +232,21 @@ PoC では `single-person, single-clip` 入力を採用する。
 
 PoC の初期実装では `Joint only` を採用する。
 
+### 6.4 Adapter 方針
+
+`CTR-GCN` / `HD-GCN` / `BlockGCN` の公式 pretrained は基本的に `NTU 25-joint skeleton` 前提であるため、初期実装では `COCO-17 -> pseudo NTU-25 adapter` を action 前処理として実装する。
+
+方針は以下とする。
+
+* `RTMO`、tracking、debug overlay は `COCO-17` のまま扱う
+* action 入力化の直前だけ `pseudo NTU-25` へ変換する
+* 直接対応する関節は元の座標と confidence を使う
+* `spine_base` や `spine_mid` のような合成関節は midpoint で作り、confidence は親関節の最小値を使う
+* `hand` や `foot` のような proxy 関節は近傍関節の座標を流用し、confidence は減衰させる
+* `hand_tip` や `thumb` のような欠損関節は proxy 座標で埋めつつ `confidence=0` とする
+
+この方針により、座標は埋めつつ、モデルには「欠損気味」であることを伝える。
+
 理由は以下である。
 
 * `BlockGCN` 論文では 4-stream が最良だが、`Joint only` でも強い性能が出ている
@@ -230,12 +258,12 @@ PoC の初期実装では `Joint only` を採用する。
 * `J + JM`
 * `J + B + JM + BM`
 
-### 6.4 入力テンソル設計
+### 6.5 入力テンソル設計
 
 PoC の初期案は以下とする。
 
-* `num_person = 1`
-* `num_joints = 17`
+* `num_person = 2`
+* `num_joints = 25`
 * `in_channels = 3`
 
 チャネル内容:
@@ -244,9 +272,13 @@ PoC の初期案は以下とする。
 * `y`
 * `confidence`
 
-`num_joints = 17` は COCO 系 keypoint 定義を標準とする想定である。
+ここでの `num_person = 2` は公式 `CTR-GCN` pretrained との互換を取るための backend 上のテンソル仕様である。
+実際の運用単位は引き続き `1 track_id = 1 person clip` とし、2人目スロットはゼロ埋めする。
 
-### 6.5 keypoint schema
+ここでの `num_joints = 25` は action backend 入力時の `pseudo NTU-25` を指す。
+前段の pose / tracking / overlay は引き続き `COCO-17` を標準とする。
+
+### 6.6 keypoint schema
 
 初期実装では、RTMO から得られる keypoint を `COCO-17` 相当の 17 関節定義へ統一する。
 
@@ -286,9 +318,9 @@ RTMO の出力順序がこれと異なる場合は、`pose/` 側で明示的に 
 * RTMO 出力をこの順序へ明示変換する
 * 各関節は `(x, y, confidence)` の 3 要素へ統一する
 * `mid_hip` は入力関節に含めず、正規化用補助点としてのみ使う
-* 最終入力テンソルは `shape = [C, T, V, M] = [3, clip_len, 17, 1]` を基本とする
+* action backend 直前で `pseudo NTU-25` へ変換し、最終入力テンソルは `shape = [C, T, V, M] = [3, clip_len, 25, 1]` を基本とする
 
-### 6.5 座標前処理
+### 6.7 座標前処理
 
 PoC では後段を人物位置に依存させすぎないため、人物中心基準の正規化を行う。
 

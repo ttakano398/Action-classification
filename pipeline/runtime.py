@@ -40,6 +40,8 @@ class RuntimePipeline:
         self.output_cfg = self.config["output"]
         self.input_cfg = self.config["input"]
         self.logging_cfg = self.config.get("logging", {})
+        if device_override:
+            self.action_cfg["device"] = device_override
 
         self.pose_estimator = RTMOEstimator(self.pose_cfg, device_override=device_override)
         self.mapper = Coco17Mapper(self.pose_cfg.get("source_order", "coco17"))
@@ -159,6 +161,10 @@ class RuntimePipeline:
             clip=clip,
             clip_len=int(self.action_cfg["clip_len"]),
             conf_thr=float(self.pose_cfg.get("conf_thr", 0.3)),
+            target_layout=str(self.action_cfg.get("target_layout", "coco17")),
+            confidence_mode=str(self.action_cfg.get("confidence_mode", "input_channel")),
+            proxy_conf_scale=float(self.action_cfg.get("proxy_conf_scale", 0.5)),
+            num_person=int(self.action_cfg.get("num_person", 1)),
         )
         return self.action_predictor.predict(model_input)
 

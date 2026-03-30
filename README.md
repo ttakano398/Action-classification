@@ -1,22 +1,24 @@
-# RTMO -> BlockGCN PoC
+# RTMO -> CTR-GCN PoC
 
 This repository contains the initial implementation scaffold for a debug-first
 human action classification pipeline:
 
-`video/webcam -> RTMO pose estimation -> Hungarian tracking -> COCO-17 mapping -> debug overlay`
+`video/webcam -> RTMO pose estimation -> Hungarian tracking -> COCO-17 mapping -> pseudo NTU-25 adapter -> debug overlay`
 
 The current scope focuses on:
 
 - Ubuntu + CUDA environment setup
 - RTMO-s (`rtmo-s_8xb32-600e_body7-640x640`) integration
 - COCO-17 canonical preprocessing
+- `COCO-17 -> pseudo NTU-25` action-input adaptation
 - lightweight tracking with Hungarian matching
 - debug visualization with skeleton overlay, `track_id`, and action placeholder
 
-The full BlockGCN inference integration is intentionally left as the next step.
-The runtime already exposes the interface where a BlockGCN predictor will plug
-in later. Until then, the overlay can still validate pose, tracking, and state
-flow with `warmup` / `no_action_model` states.
+The initial action backend target is `CTR-GCN`, with `HD-GCN` as a secondary
+fallback and `BlockGCN` as the longer-term target. The runtime already exposes
+the interface where a pretrained GCN predictor will plug in later. Until then,
+the overlay can still validate pose, tracking, adapter, and state flow with
+`warmup` / `no_action_model` states.
 
 ## Repository layout
 
@@ -190,10 +192,63 @@ Important fields:
 - `pose.checkpoint`
 - `tracking.match_method`
 - `action.clip_len`
+- `action.repo_dir`
+- `action.checkpoint`
+- `action.target_layout`
+- `action.proxy_conf_scale`
 - `output.draw_overlay`
 
 If `pose.config_file` and `pose.checkpoint` are left empty, the runtime tries
 to resolve them from `checkpoints/` using the selected `pose.model_name`.
+
+For the current `CTR-GCN` path, `action.target_layout: ntu25` means the runtime
+keeps pose and tracking in `COCO-17`, then converts each normalized clip to a
+`pseudo NTU-25` layout right before action inference. Missing joints are
+handled conservatively:
+
+- direct joints keep their original confidence
+- midpoint joints such as `spine_base` use the lower confidence of the parents
+- proxy joints such as `left_hand` and `left_foot` reuse nearby coordinates
+  with down-weighted confidence via `action.proxy_conf_scale`
+- joints with no meaningful proxy such as `thumb` and `hand_tip` are filled
+  with proxy coordinates but `confidence=0`
+
+## Recommended CTR-GCN checkpoint
+
+The recommended starting point for future `CTR-GCN` integration is:
+
+- official `CTR-GCN`
+- `joint` modality
+- `NTU RGB+D 120` `cross-subject` pretrained checkpoint
+
+This is the default recommendation because the official repository explicitly
+supports NTU120 and provides pretrained models for NTU RGB+D 60 and 120 cross
+subject, while also noting a strong joint-only baseline for NTU120. If weight
+availability or debugging simplicity is a concern, the next fallback is a
+joint-only `NTU RGB+D 60 cross-subject` checkpoint.
+
+Place the official `CTR-GCN` repository at:
+
+```text
+third_party/CTR-GCN
+```
+
+Place the initial checkpoint at:
+
+```text
+checkpoints/ctrgcn/ntu120_xsub_joint.pt
+```
+
+These match the defaults in `config/default.yaml`. If you prefer another
+layout, update:
+
+- `action.repo_dir`
+- `action.checkpoint`
+
+The initial wrapper assumes the official repo layout and imports:
+
+- `model.ctrgcn`
+- `graph.ntu_rgb_d.Graph`
 
 ## Run debug overlay
 
@@ -285,17 +340,19 @@ The runtime overlays:
 - `state`
 - FPS
 
-Without a BlockGCN checkpoint wired in, each tracked person will remain in a
-non-final action state such as `warmup` or `no_action_model`. This is expected
-for the initial scope. The runtime now includes state management for future
-classifier outputs, so once a real action backend is connected it can expose
-`stable`, `transition`, and `uncertain` states without further pipeline changes.
+Without a valid `CTR-GCN` repo and checkpoint wired in, each tracked person
+will remain in a non-final action state such as `warmup`,
+`missing_action_checkpoint`, `missing_action_repo`, or `no_action_model`. This
+is expected until the backend assets are placed in the configured paths. The
+runtime already includes state management for future classifier outputs, so
+once the real action backend is connected it can expose `stable`,
+`transition`, and `uncertain` states without further pipeline changes.
 
 ## Next implementation step
 
-The next milestone is BlockGCN model integration:
+The next milestone after the initial `CTR-GCN` wiring is:
 
-- model loader
-- clip-to-logit inference
-- smoothing with real action scores
-- label overlay backed by the classifier instead of the placeholder
+- official checkpoint validation on Ubuntu
+- stride-aware inference scheduling
+- `NTU label` overlay backed by the classifier instead of the placeholder
+- later comparison with `HD-GCN`, then migration path to `BlockGCN`
