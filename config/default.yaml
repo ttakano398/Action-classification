@@ -1,5 +1,5 @@
 input:
-  source: /dev/video0
+  source: /dev/video2
   width: 1280
   height: 720
   fps: 30
@@ -54,8 +54,14 @@ output:
   show_action_label: true
   show_action_score: true
   show_fps: true
+  show_runtime_status: true
   save_json: false
   json_path: output/predictions.jsonl
   save_video: false
   video_path: output/debug_overlay.mp4
   window_name: RTMO BlockGCN Debug
+
+logging:
+  enable_stdout: false
+  interval: 15
+  log_empty_frames: false

@@ -43,7 +43,14 @@ class RTMOEstimator:
         self.model = init_model(config_file, checkpoint, device=device)
 
     def infer(self, frame: np.ndarray) -> list[PoseObservation]:
-        data_sample = self._inference_bottomup(self.model, frame)
+        results = self._inference_bottomup(self.model, frame)
+        if isinstance(results, list):
+            if not results:
+                return []
+            data_sample = results[0]
+        else:
+            data_sample = results
+
         pred_instances = getattr(data_sample, "pred_instances", None)
         if pred_instances is None:
             return []
