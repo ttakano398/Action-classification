@@ -10,7 +10,7 @@ from settings import load_config
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="RTMO -> BlockGCN debug runtime")
     parser.add_argument("--config", default="config/default.yaml", help="Path to YAML config")
-    parser.add_argument("--input", default="0", help="Video path or webcam index")
+    parser.add_argument("--input", default=None, help="Video path or webcam index")
     parser.add_argument("--device", default=None, help="Override device, for example cuda:0 or cpu")
     parser.add_argument("--save-json", action="store_true", help="Force JSONL output on for this run")
     return parser.parse_args()
@@ -24,7 +24,11 @@ def main() -> None:
         config.setdefault("output", {})
         config["output"]["save_json"] = True
 
-    source = int(args.input) if args.input.isdigit() else args.input
+    input_source = args.input
+    if input_source is None:
+        input_source = str(config.get("input", {}).get("source", 0))
+
+    source = int(input_source) if str(input_source).isdigit() else input_source
     runtime = RuntimePipeline(config=config, root_dir=root_dir, device_override=args.device)
     runtime.run(source)
 

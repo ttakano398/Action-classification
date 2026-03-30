@@ -203,6 +203,12 @@ Activate the virtual environment first:
 source .venv/bin/activate
 ```
 
+Use the source configured in `config/default.yaml`:
+
+```bash
+python run_debug.py --config config/default.yaml
+```
+
 Run on a video:
 
 ```bash
