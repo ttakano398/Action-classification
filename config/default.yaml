@@ -62,7 +62,7 @@ action:
   topo_insert_layers: 10
   confidence_mode: input_channel
   proxy_conf_scale: 0.5
-  score_thr: 0.6
+  score_thr: 0.3
   smooth_confirm_count: 3
   use_unknown_class: false
 
