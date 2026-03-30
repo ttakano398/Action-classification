@@ -10,6 +10,7 @@ TORCHVISION_VERSION="${TORCHVISION_VERSION:-0.19.0}"
 MMENGINE_VERSION="${MMENGINE_VERSION:-0.10.7}"
 MMCV_VERSION="${MMCV_VERSION:-2.2.0}"
 MMCV_WHEEL_URL="${MMCV_WHEEL_URL:-https://download.openmmlab.com/mmcv/dist/cu121/torch2.4.0/index.html}"
+NUMPY_VERSION="${NUMPY_VERSION:-1.26.4}"
 DOWNLOAD_RTMO="${DOWNLOAD_RTMO:-0}"
 INSTALL_APT_DEPS="${INSTALL_APT_DEPS:-0}"
 INSTALL_MMACTION2="${INSTALL_MMACTION2:-0}"
@@ -79,16 +80,19 @@ python -m pip install \
   "mmcv==${MMCV_VERSION}" \
   -f "${MMCV_WHEEL_URL}"
 python -m pip install \
+  "numpy==${NUMPY_VERSION}" \
+  cython \
   json_tricks \
   matplotlib \
   munkres \
-  numpy \
   opencv-python \
   pillow \
   pyyaml
 python -m pip install \
-  scipy \
-  xtcocotools
+  scipy
+python -m pip install \
+  --no-build-isolation \
+  "xtcocotools>=1.12"
 python -m pip install --no-deps "mmpose>=1.3.0,<1.4.0"
 
 if [[ "${INSTALL_MMACTION2}" == "1" ]]; then
@@ -116,6 +120,7 @@ Pinned runtime stack:
   torchvision==${TORCHVISION_VERSION}
   mmengine==${MMENGINE_VERSION}
   mmcv==${MMCV_VERSION}
+  numpy==${NUMPY_VERSION}
   mmpose>=1.3.0,<1.4.0 (installed without chumpy)
 
 Activate the environment with:

@@ -78,6 +78,7 @@ TORCHVISION_VERSION=0.19.0
 MMENGINE_VERSION=0.10.7
 MMCV_VERSION=2.2.0
 MMCV_WHEEL_URL=https://download.openmmlab.com/mmcv/dist/cu121/torch2.4.0/index.html
+NUMPY_VERSION=1.26.4
 INSTALL_APT_DEPS=1
 INSTALL_MMACTION2=1
 ```
@@ -87,9 +88,10 @@ does not use audio, so `torchaudio` is omitted to avoid unnecessary Python
 wheel compatibility issues.
 
 The default stack is pinned to `torch==2.4.0`, `torchvision==0.19.0`,
-`mmengine==0.10.7`, and `mmcv==2.2.0` because OpenMMLab provides a prebuilt
-`mmcv` wheel for CUDA 12.1 + Torch 2.4.0. This avoids falling back to a source
-build of `mmcv`, which is the main failure mode on fresh Ubuntu machines.
+`mmengine==0.10.7`, `mmcv==2.2.0`, and `numpy==1.26.4` because OpenMMLab
+provides a prebuilt `mmcv` wheel for CUDA 12.1 + Torch 2.4.0, while parts of
+the MMPose stack are still more stable on NumPy 1.x. This avoids both the
+source-build path of `mmcv` and ABI mismatches in `xtcocotools`.
 
 For the current PoC, `mmpose` is installed with `--no-deps` after the required
 runtime libraries are installed manually. This intentionally skips `chumpy`,
@@ -98,6 +100,10 @@ RTMO debug pipeline and is a common source of installation failures on fresh
 Ubuntu environments. This is an implementation choice for this repository,
 based on the fact that the current code path only uses `mmpose.apis` for 2D
 bottom-up inference.
+
+`xtcocotools` is installed with `--no-build-isolation` after pinning
+`numpy==1.26.4` so that its compiled extension matches the active NumPy ABI.
+This avoids import-time errors such as `numpy.dtype size changed`.
 
 `mmaction2` is optional for now because the current repository still uses a
 placeholder BlockGCN backend. If you want to prepare the future action-model
